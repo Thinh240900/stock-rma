@@ -84,6 +84,15 @@ class TestRma(common.TransactionCase):
             products2move, "supplier", cls.env.ref("base.res_partner_2"), dropship=False
         )
 
+        rma_customer_rule = cls.wh.rma_customer_out_pull_id
+        rma_customer_rule.write(
+            {
+                "procure_method": "make_to_order",
+                "sequence": 0,
+                "location_src_id": cls.test_rma_loc.id,
+            }
+        )
+
     @classmethod
     def _create_user(cls, login, groups, company):
         group_ids = [group.id for group in groups]
