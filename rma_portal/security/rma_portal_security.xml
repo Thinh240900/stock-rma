@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- Portal users can only see their own RMA order lines -->
+    <record id="rma_order_line_portal_rule" model="ir.rule">
+        <field name="name">RMA Order Line Portal Access</field>
+        <field name="model_id" ref="rma.model_rma_order_line" />
+        <field name="domain_force">[
+            ('partner_id', 'child_of', user.commercial_partner_id.id),
+            ('type', '=', 'customer')
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]" />
+    </record>
+
+</odoo>

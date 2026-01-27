@@ -52,8 +52,8 @@ class RmaOrder(models.Model):
                     state = "cancel"
                 elif "draft" in states:
                     state = "draft"
-                elif "to_approved" in states:
-                    state = "to_approved"
+                elif "to_approve" in states:
+                    state = "to_approve"
                 elif "approved" in states:
                     state = "approved"
                 else:

@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- Add Request RMA button and modal to Sale Order Portal Page -->
+    <template
+        id="sale_order_portal_template_rma"
+        name="Request RMA Button"
+        inherit_id="sale.sale_order_portal_template"
+    >
+        <!-- Add Request RMA button in sidebar -->
+        <xpath
+            expr="//div[hasclass('o_portal_sale_sidebar')]//div[hasclass('o_download_pdf')]/.."
+            position="after"
+        >
+            <li
+                t-if="sale_order.state in ['sale', 'done']"
+                class="list-group-item flex-grow-1"
+                id="li-request-rma"
+            >
+                <a
+                    role="button"
+                    class="btn btn-secondary btn-block mb8"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modal-request-rma"
+                >
+                    <i class="fa fa-reply" /> Request RMAs
+                </a>
+            </li>
+        </xpath>
+
+        <!-- Add modal at the end of the page -->
+        <xpath expr="//div[@id='modaldecline']" position="after">
+            <div role="dialog" class="modal fade" id="modal-request-rma">
+                <div class="modal-dialog" style="max-width: 1000px;">
+                    <t t-call="rma_portal.sale_rma_request_form" />
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- RMA Request Form (used in modal) -->
+    <template id="sale_rma_request_form" name="RMA Request Form">
+        <form
+            id="form-request-rma"
+            method="POST"
+            t-attf-action="/my/orders/#{sale_order.id}/requestrma/submit"
+            class="modal-content"
+            enctype="multipart/form-data"
+        >
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
+
+            <header class="modal-header">
+                <h4 class="modal-title">Request RMAs</h4>
+                <button
+                    type="button"
+                    class="btn-close"
+                    aria-label="Close"
+                    data-bs-dismiss="modal"
+                />
+            </header>
+
+            <main class="modal-body" id="modal-body-request-rma">
+                <div class="alert alert-info mb-2 mb-sm-1 oe_structure" role="alert">
+                    <span>
+                        Please:
+                        <ul>
+                            <li
+                            >Select the product quantity and the return reason.</li>
+                            <li
+                            >Attach documents if needed and leave a comment if necessary.</li>
+                            <li
+                            >You cannot return more than the returned quantity.</li>
+                            <li
+                            > Check your RMA status in the RMA Orders view.</li>
+                        </ul>
+                    </span>
+                </div>
+
+                <!-- Delivery Address Picker -->
+                <t
+                    t-set="delivery_addresses"
+                    t-value="(sale_order.partner_shipping_id | sale_order.partner_id.commercial_partner_id.child_ids.filtered(lambda c: c.type == 'delivery'))[:20]"
+                />
+                <button
+                    class="btn btn-primary btn-block mb-3"
+                    type="button"
+                    aria-expanded="false"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#delivery_address_picker"
+                >
+                    <i class="fa fa-truck" /> Choose Delivery Address
+                </button>
+                <div
+                    class="collapse mb-3"
+                    id="delivery_address_picker"
+                    style="max-height: 500px; overflow: hidden;"
+                >
+                    <div class="row">
+                        <!-- Address Cards Column -->
+                        <div class="col-lg-6">
+                            <h6 class="mb-2">Select an address:</h6>
+                            <div
+                                class="d-flex flex-column gap-2"
+                                id="address-cards-container"
+                                style="max-height: 420px; overflow-y: auto; overflow-x: hidden;"
+                            >
+                                <t t-foreach="delivery_addresses" t-as="address">
+                                    <div
+                                        t-attf-class="o_rma_portal_shipping_card card #{address == sale_order.partner_shipping_id and 'selected' or ''}"
+                                        t-att-data-address-id="address.id"
+                                        t-att-data-name="address.name or ''"
+                                        t-att-data-company="address.commercial_company_name or ''"
+                                        t-att-data-street="address.street or ''"
+                                        t-att-data-street2="address.street2 or ''"
+                                        t-att-data-city="address.city or ''"
+                                        t-att-data-zip="address.zip or ''"
+                                        t-att-data-country="address.country_id.name or ''"
+                                        t-att-data-state="address.state_id.name or ''"
+                                        t-att-data-phone="address.phone or ''"
+                                        t-att-data-mobile="address.mobile or ''"
+                                        t-att-data-email="address.email or ''"
+                                        style="cursor: pointer; border: 2px solid #dee2e6; transition: all 0.2s ease; overflow:visible;"
+                                    >
+                                        <div
+                                            class="card-body"
+                                            style="padding: 0.5rem 0.75rem;"
+                                        >
+                                            <div
+                                                style="display: flex; align-items: flex-start;"
+                                            >
+                                                <i
+                                                    t-attf-class="fa #{address.type == 'delivery' and 'fa-truck' or 'fa-user'}"
+                                                    style="color: #6c757d; margin-right: 0.5rem; margin-top: 0.25rem;"
+                                                />
+                                                <div style="flex-grow: 1;">
+                                                    <strong t-out="address.name" />
+                                                    <t
+                                                        t-if="address.commercial_company_name"
+                                                    >
+                                                        <br /><small
+                                                            style="color: #6c757d;"
+                                                            t-out="address.commercial_company_name"
+                                                        />
+                                                    </t>
+                                                    <div
+                                                        style="font-size: 0.875em; color: #6c757d;"
+                                                    >
+                                                        <t t-out="address.street" />
+                                                        <t t-if="address.street2"><br
+                                                            /><t
+                                                                t-out="address.street2"
+                                                            /></t>
+                                                        <br /><t
+                                                            t-out="address.city"
+                                                        /> <t t-out="address.zip" />
+                                                        <t t-if="address.country_id"><br
+                                                            /><t
+                                                                t-out="address.country_id.name"
+                                                            /></t>
+                                                    </div>
+                                                </div>
+                                                <i
+                                                    class="fa fa-check-circle selected-indicator"
+                                                    t-attf-style="color: #198754; font-size: 1.2rem; display: #{address == sale_order.partner_shipping_id and 'block' or 'none'};"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Edit Address Column -->
+                        <div class="col-lg-6 mt-3 mt-lg-0">
+                            <h6 class="mb-2">Edit delivery details:</h6>
+                            <div class="card" id="address-edit-form">
+                                <div class="card-body" style="padding: 0 1rem;">
+                                    <input
+                                        type="hidden"
+                                        name="partner_shipping_id"
+                                        id="selected_address_id"
+                                        t-att-value="sale_order.partner_shipping_id.id"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="address_edited"
+                                        id="address_edited"
+                                        value="0"
+                                    />
+
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Name *</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_name"
+                                                id="shipping_name"
+                                                t-att-value="sale_order.partner_shipping_id.name"
+                                                required="required"
+                                            />
+                                        </div>
+                                        <div class="col-12">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Company Name</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_company"
+                                                id="shipping_company"
+                                                t-att-value="sale_order.partner_shipping_id.commercial_company_name"
+                                            />
+                                        </div>
+                                        <div class="col-12">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Street *</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_street"
+                                                id="shipping_street"
+                                                t-att-value="sale_order.partner_shipping_id.street"
+                                                required="required"
+                                            />
+                                        </div>
+                                        <div class="col-12">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Street 2</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_street2"
+                                                id="shipping_street2"
+                                                t-att-value="sale_order.partner_shipping_id.street2"
+                                            />
+                                        </div>
+                                        <div class="col-6">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >City</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_city"
+                                                id="shipping_city"
+                                                t-att-value="sale_order.partner_shipping_id.city"
+                                            />
+                                        </div>
+                                        <div class="col-6">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >ZIP</label>
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_zip"
+                                                id="shipping_zip"
+                                                t-att-value="sale_order.partner_shipping_id.zip"
+                                            />
+                                        </div>
+                                        <div class="col-6">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Phone</label>
+                                            <input
+                                                type="tel"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_phone"
+                                                id="shipping_phone"
+                                                t-att-value="sale_order.partner_shipping_id.phone"
+                                            />
+                                        </div>
+                                        <div class="col-6">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Mobile</label>
+                                            <input
+                                                type="tel"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_mobile"
+                                                id="shipping_mobile"
+                                                t-att-value="sale_order.partner_shipping_id.mobile"
+                                            />
+                                        </div>
+                                        <div class="col-12">
+                                            <label
+                                                class="form-label small mb-1"
+                                            >Email</label>
+                                            <input
+                                                type="email"
+                                                class="form-control form-control-sm address-field"
+                                                name="shipping_email"
+                                                id="shipping_email"
+                                                t-att-value="sale_order.partner_shipping_id.email"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i
+                                                class="fa fa-info-circle"
+                                            /> Editing will create/update a delivery address for this contact.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <t t-set="data_list" t-value="sale_order.get_portal_rma_data()" />
+                <t
+                    t-set="reasons"
+                    t-value="sale_order.env['rma.reason'].sudo().search([])"
+                />
+
+                <table class="table table-sm" id="request-rma-table">
+                    <thead class="bg-100">
+                        <tr>
+                            <th class="text-start">Product</th>
+                            <th class="text-end">Delivered Qty</th>
+                            <th class="text-end">Returned Qty</th>
+                            <th class="text-end">Return Qty</th>
+                            <th class="text-start">Delivery</th>
+                            <th class="text-start" name="reason">Reason</th>
+                            <th class="text-center">Attachments</th>
+                            <th name="portal_rma_button_desc" />
+                        </tr>
+                    </thead>
+                    <tbody class="request-rma-tbody">
+                        <t t-foreach="data_list" t-as="data">
+                            <t t-set="has_qty" t-value="data['quantity'] > 0" />
+                            <tr
+                                t-attf-class="#{not has_qty and 'table-secondary text-muted' or ''}"
+                            >
+                                <td class="text-start">
+                                    <span t-out="data['product'].display_name" />
+                                    <t
+                                        t-if="data.get('is_kit_component') and data.get('kit_product')"
+                                    >
+                                        <br />
+                                        <small class="text-info">
+                                            <i class="fa fa-cube" /> Kit: <t
+                                                t-out="data['kit_product'].display_name"
+                                            />
+                                        </small>
+                                    </t>
+                                    <input
+                                        type="hidden"
+                                        t-attf-name="#{data_index}-product_id"
+                                        t-att-value="data['product'].id"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        t-if="data.get('sale_line')"
+                                        t-attf-name="#{data_index}-sale_line_id"
+                                        t-att-value="data['sale_line'].id"
+                                    />
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="data['delivered_qty']" />
+                                    <small
+                                        class="text-muted"
+                                        t-out="data['uom'].name"
+                                    />
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="data['returned_qty']" />
+                                    <small
+                                        class="text-muted"
+                                        t-out="data['uom'].name"
+                                    />
+                                </td>
+                                <td class="text-end">
+                                    <div id="delivery-rma-qty">
+                                        <t t-if="has_qty">
+                                            <input
+                                                type="number"
+                                                t-attf-name="#{data_index}-quantity"
+                                                class="o_input text-end"
+                                                placeholder="0"
+                                                min="0"
+                                                t-att-max="data['quantity']"
+                                                t-att-value="0"
+                                                style="max-width: 60px;"
+                                            />
+                                        </t>
+                                        <t t-else="">
+                                            <span class="text-muted">0</span>
+                                        </t>
+                                        <small
+                                            class="text-muted"
+                                            t-out="data['uom'].name"
+                                        />
+                                        <input
+                                            type="hidden"
+                                            t-attf-name="#{data_index}-uom_id"
+                                            t-att-value="data['uom'].id"
+                                        />
+                                    </div>
+                                </td>
+                                <td class="text-start">
+                                    <span
+                                        t-out="data['picking'] and data['picking'].name or '-'"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        t-attf-name="#{data_index}-picking_id"
+                                        t-att-value="data['picking'] and data['picking'].id"
+                                    />
+                                    <input
+                                        t-if="data.get('move')"
+                                        type="hidden"
+                                        t-attf-name="#{data_index}-move_id"
+                                        t-att-value="data['move'].id"
+                                    />
+                                </td>
+                                <td class="text-start" name="reason">
+                                    <t t-if="has_qty">
+                                        <select
+                                            t-attf-name="#{data_index}-reason_id"
+                                            class="form-control rma-reason"
+                                        >
+                                            <option value="">---</option>
+                                            <t t-foreach="reasons" t-as="reason">
+                                                <option t-att-value="reason.id">
+                                                    <t t-out="reason.name" />
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="text-muted">-</span>
+                                    </t>
+                                </td>
+                                <td class="text-center">
+                                    <t t-if="has_qty">
+                                        <label
+                                            t-attf-for="file-#{data_index}"
+                                            class="btn btn-sm btn-outline-secondary mb-0"
+                                            title="Upload files"
+                                        >
+                                            <i class="fa fa-paperclip" />
+                                            <span
+                                                class="d-none d-md-inline"
+                                            > Upload</span>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            t-attf-id="file-#{data_index}"
+                                            t-attf-name="#{data_index}-attachments"
+                                            class="d-none rma-file-input"
+                                            multiple="multiple"
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                        />
+                                        <small
+                                            t-attf-id="file-count-#{data_index}"
+                                            class="text-muted file-count d-block"
+                                        />
+                                    </t>
+                                    <t t-else="">
+                                        <span class="text-muted">-</span>
+                                    </t>
+                                </td>
+                                <td>
+                                    <t t-if="has_qty">
+                                        <button
+                                            class="btn btn-primary fa fa-comments"
+                                            type="button"
+                                            t-attf-data-bs-target="#comment-#{data_index}"
+                                            aria-expanded="false"
+                                            t-attf-aria-controls="comment-#{data_index}"
+                                            data-bs-toggle="collapse"
+                                        />
+                                    </t>
+                                </td>
+                            </tr>
+                            <tr
+                                t-if="has_qty"
+                                class="collapse"
+                                t-attf-id="comment-#{data_index}"
+                            >
+                                <td colspan="8">
+                                    <textarea
+                                        class="form-control o_website_form_input"
+                                        t-attf-name="#{data_index}-description"
+                                        placeholder="Comment anything relevant to the return, like serial numbers, a description of the issue, etc"
+                                    />
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </main>
+
+            <footer class="modal-footer">
+                <button type="submit" t-att-id="sale_order.id" class="btn btn-primary">
+                    <i class="fa fa-check" /> Request RMAs
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fa fa-times" /> Cancel
+                </button>
+            </footer>
+        </form>
+    </template>
+    <template id="request_rma_single_page" name="Request RMA (single page)">
+        <t t-call="portal.portal_layout">
+            <t t-call="portal.portal_record_layout">
+                <t t-set="card_header">
+                    <h5 class="mb-0">
+                        <span>
+                            RMA request for order <t t-out="sale_order.name" />
+                        </span>
+                    </h5>
+                </t>
+                <t t-set="card_body">
+                    <div class="oe_structure" id="sale_rma_request_top_hook" />
+                    <div id="request_form">
+                        <div class="row">
+                            <t t-call="rma_portal.sale_rma_request_form">
+                                <t t-set="single_page_mode" t-value="True" />
+                            </t>
+                        </div>
+                    </div>
+                    <div class="oe_structure" id="sale_rma_request_bottom_hook" />
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

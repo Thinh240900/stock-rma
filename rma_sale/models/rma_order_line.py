@@ -117,34 +117,6 @@ class RmaOrderLine(models.Model):
             lines = domain and line_model.search(domain) or line_model.browse()
             rec.sale_line_domain_ids = lines.ids
 
-    def _get_stock_move_reference(self):
-        self.ensure_one()
-        move = self.reference_move_id
-        if self.sale_line_id:
-            # CHECK ME: backorder cases can be more than one move
-            sale_moves = self.sale_line_id.move_ids.filtered(
-                lambda x: x.location_dest_id.usage == "customer" and x.state == "done"
-            )
-            if sale_moves:
-                return sale_moves
-        return move
-
-    @api.depends("product_id", "partner_id")
-    def _compute_sale_line_domain(self):
-        line_model = self.env["sale.order.line"]
-        for rec in self:
-            domain = []
-            if rec.partner_id:
-                domain = [
-                    "|",
-                    ("order_id.partner_id", "=", rec.partner_id.id),
-                    ("order_id.partner_id", "child_of", rec.partner_id.id),
-                ]
-            if rec.product_id:
-                domain.append(("product_id", "=", rec.product_id.id))
-            lines = domain and line_model.search(domain) or line_model.browse()
-            rec.sale_line_domain_ids = lines.ids
-
     @api.onchange("operation_id")
     def _onchange_operation_id(self):
         res = super(RmaOrderLine, self)._onchange_operation_id()
