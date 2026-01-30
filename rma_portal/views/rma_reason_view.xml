@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- RMA Reason Tree View -->
+    <record id="view_rma_reason_tree" model="ir.ui.view">
+        <field name="name">rma.reason.tree</field>
+        <field name="model">rma.reason</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle" />
+                <field name="name" />
+                <field name="description" />
+                <field name="active" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- RMA Reason Form View -->
+    <record id="view_rma_reason_form" model="ir.ui.view">
+        <field name="name">rma.reason.form</field>
+        <field name="model">rma.reason</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box" />
+                    <widget
+                        name="web_ribbon"
+                        title="Archived"
+                        bg_color="bg-danger"
+                        attrs="{'invisible': [('active', '=', True)]}"
+                    />
+                    <div class="oe_title">
+                        <label for="name" />
+                        <h1>
+                            <field name="name" placeholder="Reason name..." />
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence" />
+                            <field name="active" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Description..." />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- RMA Reason Action -->
+    <record id="action_rma_reason" model="ir.actions.act_window">
+        <field name="name">RMA Reasons</field>
+        <field name="res_model">rma.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first RMA reason
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under RMA Configuration -->
+    <menuitem
+        id="menu_rma_reason"
+        name="RMA Reasons"
+        parent="rma.menu_rma_config"
+        action="action_rma_reason"
+        sequence="20"
+    />
+
+</odoo>

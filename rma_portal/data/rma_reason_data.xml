@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo noupdate="1">
+
+    <record id="rma_reason_defective" model="rma.reason">
+        <field name="name">Defective</field>
+        <field name="sequence">10</field>
+        <field name="description">Product is defective or not working properly</field>
+    </record>
+
+    <record id="rma_reason_damaged" model="rma.reason">
+        <field name="name">Damaged</field>
+        <field name="sequence">20</field>
+        <field
+            name="description"
+        >Product was damaged during shipping or handling</field>
+    </record>
+
+    <record id="rma_reason_wrong_item" model="rma.reason">
+        <field name="name">Wrong Item</field>
+        <field name="sequence">30</field>
+        <field name="description">Wrong product was delivered</field>
+    </record>
+
+    <record id="rma_reason_not_as_described" model="rma.reason">
+        <field name="name">Not as Described</field>
+        <field name="sequence">40</field>
+        <field name="description">Product does not match the description</field>
+    </record>
+
+    <record id="rma_reason_changed_mind" model="rma.reason">
+        <field name="name">Changed Mind</field>
+        <field name="sequence">50</field>
+        <field name="description">Customer changed their mind</field>
+    </record>
+
+    <record id="rma_reason_other" model="rma.reason">
+        <field name="name">Other</field>
+        <field name="sequence">100</field>
+        <field name="description">Other reason</field>
+    </record>
+
+</odoo>
