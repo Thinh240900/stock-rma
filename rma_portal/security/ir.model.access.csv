@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rma_order_line_portal,rma.order.line.portal,rma.model_rma_order_line,base.group_portal,1,1,0,0
+access_rma_operation_portal,rma.operation.portal,rma.model_rma_operation,base.group_portal,1,0,0,0
+access_rma_reason_portal,rma.reason.portal,model_rma_reason,base.group_portal,1,0,0,0
+access_rma_reason_user,rma.reason.user,model_rma_reason,base.group_user,1,0,0,0
+access_rma_reason_manager,rma.reason.manager,model_rma_reason,rma.group_rma_manager,1,1,1,1

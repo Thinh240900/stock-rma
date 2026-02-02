@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- Add RMA button to /my home page -->
+    <template
+        id="portal_my_home_rma"
+        name="Show RMA Orders"
+        inherit_id="portal.portal_my_home"
+        priority="30"
+    >
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">RMA Orders</t>
+                <t t-set="url" t-value="'/my/rma'" />
+                <t t-set="placeholder_count" t-value="'rma_count'" />
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Breadcrumbs for RMA -->
+    <template
+        id="portal_my_home_menu_rma"
+        name="RMA Breadcrumbs"
+        inherit_id="portal.portal_breadcrumbs"
+        priority="30"
+    >
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li
+                t-if="page_name == 'rma' or page_name == 'RMA'"
+                t-attf-class="breadcrumb-item #{'active ' if not rma else ''}"
+            >
+                <a t-if="rma" t-attf-href="/my/rma?{{ keep_query() }}">RMA Orders</a>
+                <t t-else="">RMA Orders</t>
+            </li>
+            <li t-if="rma" class="breadcrumb-item active">
+                <t t-esc="rma.name" />
+            </li>
+        </xpath>
+    </template>
+
+    <!-- RMA List View -->
+    <template id="portal_my_rma" name="My RMA Orders">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">RMA Orders</t>
+            </t>
+
+            <t t-set="is_admin" t-value="is_rma_admin" />
+            <t t-if="rma_lines" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>RMA Reference</th>
+                        <th t-if="is_admin">Customer</th>
+                        <th>Source SO</th>
+                        <th>Product</th>
+                        <th class="text-center">Kit</th>
+                        <th class="text-center">Qty</th>
+                        <th>Reason</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Attachments</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="rma_lines" t-as="rma">
+                        <tr>
+                            <!-- RMA Reference -->
+                            <td style="overflow: hidden;">
+                                <a t-attf-href="/my/rma/#{rma.id}?{{ keep_query() }}">
+                                    <t t-esc="rma.name" />
+                                </a>
+                            </td>
+                            <!-- Customer (Admin only) -->
+                            <td t-if="is_admin" style="overflow: hidden;">
+                                <t t-if="rma.partner_id">
+                                    <t t-out="rma.partner_id.name" />
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                            <!-- Source SO -->
+                            <td style="overflow: hidden;">
+                                <t t-if="rma.sale_id">
+                                    <t t-out="rma.sale_id.name" />
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                            <!-- Product -->
+                            <td style="overflow: hidden;">
+                                <t t-out="rma.product_id.display_name" />
+                            </td>
+                            <!-- Kit -->
+                            <td style="overflow: hidden;">
+                                <t t-if="rma.kit_id">
+                                    <t t-out="rma.kit_id.display_name" />
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                            <!-- Qty -->
+                            <td class="text-center" style="overflow: hidden;">
+                                <span t-out="rma.product_qty" />
+                                <span t-out="rma.uom_id.name" />
+                            </td>
+                            <!-- Reason -->
+                            <td style="overflow: hidden;">
+                                <t t-if="rma.reason_id">
+                                    <t t-out="rma.reason_id.name" />
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                            <!-- Status -->
+                            <td class="text-center" style="overflow: hidden;">
+                                <t t-if="rma.state == 'draft'">
+                                    <span
+                                        class="badge rounded-pill text-bg-secondary"
+                                    >Draft</span>
+                                </t>
+                                <t t-elif="rma.state == 'to_approve'">
+                                    <span
+                                        class="badge rounded-pill text-bg-info"
+                                    >To Approve</span>
+                                </t>
+                                <t t-elif="rma.state == 'approved'">
+                                    <span
+                                        class="badge rounded-pill text-bg-primary"
+                                    >Approved</span>
+                                </t>
+                                <t t-elif="rma.state == 'done'">
+                                    <span
+                                        class="badge rounded-pill text-bg-success"
+                                    >Done</span>
+                                </t>
+                                <t t-elif="rma.state == 'canceled'">
+                                    <span
+                                        class="badge rounded-pill text-bg-danger"
+                                    >Cancelled</span>
+                                </t>
+                            </td>
+                            <!-- Attachments -->
+                            <td class="text-center" style="overflow: hidden;">
+                                <t t-if="rma.message_attachment_count > 0">
+                                    <span class="badge rounded-pill text-bg-secondary">
+                                        <i class="fa fa-paperclip" />
+                                        <t t-out="rma.message_attachment_count" />
+                                    </span>
+                                </t>
+                                <t t-else="">
+                                    <span class="text-muted">0</span>
+                                </t>
+                            </td>
+                            <!-- Description -->
+                            <td style="overflow: hidden;">
+                                <t t-if="rma.description">
+                                    <span t-out="rma.description[:50]" />
+                                    <t t-if="len(rma.description or '') > 50">...</t>
+                                </t>
+                                <t t-else="">-</t>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
+
+            <p t-else="">There are currently no RMA orders for your account.</p>
+
+        </t>
+    </template>
+
+    <template id="portal_rma_page" name="My RMA">
+        <t t-call="portal.portal_layout">
+            <t t-set="o_portal_fullwidth_alert" groups="rma.group_rma_customer_user">
+                <t t-call="portal.portal_back_in_edit_mode">
+                    <t
+                        t-set="backend_url"
+                        t-value="'/web#return_label=Website&amp;model=rma.order.line&amp;id=%s&amp;view_type=form' % (rma.id)"
+                    />
+                </t>
+            </t>
+            <t t-call="portal.portal_record_layout">
+                <t t-set="card_header">
+                    <h5 class="mb-0">
+                        <span>
+                            RMA -
+                            <span t-field="rma.name" />
+                        </span>
+                        <span class="float-end">
+                            <t t-if="rma.state == 'done'">
+                                <span class="badge rounded-pill text-bg-success">
+                                    <i class="fa fa-fw fa-check" />
+                                    Done
+                                </span>
+                            </t>
+                            <t t-elif="rma.state == 'canceled'">
+                                <span class="badge rounded-pill text-bg-danger">
+                                    <i class="fa fa-fw fa-times" />
+                                    Cancelled
+                                </span>
+                            </t>
+                            <t t-elif="rma.state == 'approved'">
+                                <span class="badge rounded-pill text-bg-primary">
+                                    <i class="fa fa-fw fa-check" />
+                                    Approved
+                                </span>
+                            </t>
+                            <t t-elif="rma.state == 'to_approve'">
+                                <span class="badge rounded-pill text-bg-info">
+                                    <i class="fa fa-fw fa-clock-o" />
+                                    To Approve
+                                </span>
+                            </t>
+                            <t t-else="">
+                                <span class="badge rounded-pill text-bg-secondary">
+                                    <i class="fa fa-fw fa-clock-o" />
+                                    Draft
+                                </span>
+                            </t>
+                        </span>
+                    </h5>
+                </t>
+                <t t-set="card_body">
+                    <div id="general_information">
+                        <div class="row mt-3">
+                            <!-- Customer -->
+                            <t t-set="partner_sudo" t-value="rma.partner_id.sudo()" />
+                            <div
+                                t-if="rma.partner_id"
+                                class="col-12 col-md-6 mb-4 mb-md-0"
+                            >
+                                <h6>
+                                    <strong>Customer:</strong>
+                                </h6>
+                                <div class="row">
+                                    <div class="col flex-grow-0 pe-3">
+                                        <img
+                                            t-if="partner_sudo.image_128"
+                                            class="rounded-circle mt-1 o_portal_contact_img"
+                                            t-att-src="image_data_uri(partner_sudo.image_128)"
+                                            alt="Contact"
+                                        />
+                                        <img
+                                            t-else=""
+                                            class="rounded-circle mt-1 o_portal_contact_img"
+                                            src="/web/static/src/img/user_menu_avatar.png"
+                                            alt="Contact"
+                                        />
+                                    </div>
+                                    <div class="col ps-sm-0">
+                                        <div class="o_portal_contact_details">
+                                            <strong t-out="partner_sudo.name" />
+                                            <div t-if="partner_sudo.email">
+                                                <i class="fa fa-envelope me-1" />
+                                                <a
+                                                    t-attf-href="mailto:#{partner_sudo.email}"
+                                                >
+                                                    <t t-out="partner_sudo.email" />
+                                                </a>
+                                            </div>
+                                            <div t-if="partner_sudo.phone">
+                                                <i class="fa fa-phone me-1" />
+                                                <a
+                                                    t-attf-href="tel:#{partner_sudo.phone}"
+                                                >
+                                                    <t t-out="partner_sudo.phone" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Delivery Address -->
+                            <t
+                                t-set="delivery_sudo"
+                                t-value="rma.delivery_address_id.sudo()"
+                            />
+                            <div
+                                t-if="rma.delivery_address_id"
+                                class="col-12 col-md-6 mb-4 mb-md-0"
+                            >
+                                <h6>
+                                    <strong>Delivery Address:</strong>
+                                </h6>
+                                <div class="row">
+                                    <div class="col flex-grow-0 pe-3">
+                                        <img
+                                            t-if="delivery_sudo.image_128"
+                                            class="rounded-circle mt-1 o_portal_contact_img"
+                                            t-att-src="image_data_uri(delivery_sudo.image_128)"
+                                            alt="Contact"
+                                        />
+                                        <img
+                                            t-else=""
+                                            class="rounded-circle mt-1 o_portal_contact_img"
+                                            src="/web/static/src/img/user_menu_avatar.png"
+                                            alt="Contact"
+                                        />
+                                    </div>
+                                    <div class="col ps-sm-0">
+                                        <div class="o_portal_contact_details">
+                                            <strong t-out="delivery_sudo.name" />
+                                            <div t-if="delivery_sudo.street">
+                                                <t t-out="delivery_sudo.street" />
+                                            </div>
+                                            <div t-if="delivery_sudo.street2">
+                                                <t t-out="delivery_sudo.street2" />
+                                            </div>
+                                            <div>
+                                                <t t-if="delivery_sudo.city">
+                                                    <t t-out="delivery_sudo.city" />,
+                                                </t>
+                                                <t t-if="delivery_sudo.state_id">
+                                                    <t
+                                                        t-out="delivery_sudo.state_id.name"
+                                                    />
+                                                </t>
+                                                <t t-if="delivery_sudo.zip">
+                                                    <t t-out="delivery_sudo.zip" />
+                                                </t>
+                                            </div>
+                                            <div t-if="delivery_sudo.country_id">
+                                                <t
+                                                    t-out="delivery_sudo.country_id.name"
+                                                />
+                                            </div>
+                                            <div t-if="delivery_sudo.email">
+                                                <i class="fa fa-envelope me-1" />
+                                                <a
+                                                    t-attf-href="mailto:#{delivery_sudo.email}"
+                                                >
+                                                    <t t-out="delivery_sudo.email" />
+                                                </a>
+                                            </div>
+                                            <div t-if="delivery_sudo.phone">
+                                                <i class="fa fa-phone me-1" />
+                                                <a
+                                                    t-attf-href="tel:#{delivery_sudo.phone}"
+                                                >
+                                                    <t t-out="delivery_sudo.phone" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="product_information">
+                            <div class="col-12 col-md-6 mb-4 mb-md-0">
+                                <!-- Origin Delivery -->
+                                <t
+                                    t-if="rma.reference_move_id and rma.reference_move_id.picking_id"
+                                >
+                                    <div class="row mb-2 mb-sm-1">
+                                        <div class="col-12 col-sm-4">
+                                            <strong>Origin Delivery</strong>
+                                        </div>
+                                        <div class="col-12 col-sm-8">
+                                            <span
+                                                t-esc="rma.reference_move_id.picking_id.name"
+                                            />
+                                        </div>
+                                    </div>
+                                </t>
+                                <!-- Product -->
+                                <div
+                                    t-if="rma.sudo().product_id"
+                                    class="row mb-2 mb-sm-1"
+                                >
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Product</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span
+                                            t-esc="rma.sudo().product_id.display_name"
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Quantity -->
+                                <div t-if="rma.product_qty" class="row mb-2 mb-sm-1">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Return Quantity</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.product_qty" />
+                                        <span t-field="rma.uom_id" />
+                                    </div>
+                                </div>
+                                <!-- Qty Received -->
+                                <div class="row mb-2 mb-sm-1">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Qty Received</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.qty_received" />
+                                        <span t-field="rma.uom_id" />
+                                    </div>
+                                </div>
+                                <!-- Qty Delivered -->
+                                <div class="row">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Qty Delivered</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.qty_delivered" />
+                                        <span t-field="rma.uom_id" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <!-- RMA Date -->
+                                <div t-if="rma.date_rma" class="row mb-2 mb-sm-1">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>RMA Date</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span
+                                            t-field="rma.date_rma"
+                                            t-options='{"widget": "date"}'
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Origin -->
+                                <div t-if="rma.origin" class="row mb-2 mb-sm-1">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Origin</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.origin" />
+                                    </div>
+                                </div>
+                                <!-- Operation -->
+                                <div t-if="rma.operation_id" class="row mb-2 mb-sm-1">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Operation</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.operation_id" />
+                                    </div>
+                                </div>
+                                <!-- Reason -->
+                                <div t-if="rma.reason_id" class="row">
+                                    <div class="col-12 col-sm-4">
+                                        <strong>Reason</strong>
+                                    </div>
+                                    <div class="col-12 col-sm-8">
+                                        <span t-field="rma.reason_id" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Incoming Shipments Section -->
+                    <t t-set="in_pickings" t-value="rma._get_in_pickings()" />
+                    <section
+                        t-if="in_pickings"
+                        id="reception_section"
+                        style="page-break-inside: auto;"
+                        class="mt-4"
+                    >
+                        <strong class="d-block mb-2">Incoming Shipments</strong>
+                        <ul class="list-group mb-4">
+                            <t t-foreach="in_pickings" t-as="picking">
+                                <li
+                                    class="list-group-item d-flex flex-wrap align-items-center justify-content-between py-2 px-3"
+                                >
+                                    <div>
+                                        <i class="fa fa-truck me-1" />
+                                        <span t-esc="picking.name" class="me-lg-3" />
+                                        <div class="d-lg-inline-block">
+                                            Date:
+                                            <span
+                                                class="text-muted"
+                                                t-field="picking.scheduled_date"
+                                                t-options='{"widget": "date"}'
+                                            />
+                                        </div>
+                                    </div>
+                                    <t t-if="picking.state == 'done'">
+                                        <span
+                                            class="badge rounded-pill text-bg-success"
+                                        >
+                                            <i class="fa fa-fw fa-check" /> Done
+                                        </span>
+                                    </t>
+                                    <t t-elif="picking.state == 'cancel'">
+                                        <span class="badge rounded-pill text-bg-danger">
+                                            <i class="fa fa-fw fa-times" /> Cancelled
+                                        </span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="badge rounded-pill text-bg-info">
+                                            <i
+                                                class="fa fa-fw fa-clock-o"
+                                            /> In Progress
+                                        </span>
+                                    </t>
+                                </li>
+                            </t>
+                        </ul>
+                    </section>
+
+                    <!-- Outgoing Shipments Section -->
+                    <t t-set="out_pickings" t-value="rma._get_out_pickings()" />
+                    <section
+                        t-if="out_pickings"
+                        id="delivery_section"
+                        style="page-break-inside: auto;"
+                        class="mt-4"
+                    >
+                        <strong class="d-block mb-2">Outgoing Shipments</strong>
+                        <ul class="list-group mb-4">
+                            <t t-foreach="out_pickings" t-as="picking">
+                                <li
+                                    class="list-group-item d-flex flex-wrap align-items-center justify-content-between py-2 px-3"
+                                >
+                                    <div>
+                                        <i class="fa fa-truck me-1" />
+                                        <span t-esc="picking.name" class="me-lg-3" />
+                                        <div class="d-lg-inline-block">
+                                            Date:
+                                            <span
+                                                class="text-muted"
+                                                t-field="picking.scheduled_date"
+                                                t-options='{"widget": "date"}'
+                                            />
+                                        </div>
+                                    </div>
+                                    <t t-if="picking.state == 'done'">
+                                        <span
+                                            class="badge rounded-pill text-bg-success"
+                                        >
+                                            <i class="fa fa-fw fa-check" /> Done
+                                        </span>
+                                    </t>
+                                    <t t-elif="picking.state == 'cancel'">
+                                        <span class="badge rounded-pill text-bg-danger">
+                                            <i class="fa fa-fw fa-times" /> Cancelled
+                                        </span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="badge rounded-pill text-bg-info">
+                                            <i
+                                                class="fa fa-fw fa-clock-o"
+                                            /> In Progress
+                                        </span>
+                                    </t>
+                                </li>
+                            </t>
+                        </ul>
+                    </section>
+
+                    <!-- Description Section -->
+                    <section id="description" class="mt-4" t-if="rma.description">
+                        <h5>Description</h5>
+                        <hr class="mt-0 mb-2" />
+                        <p t-out="rma.description" />
+                    </section>
+
+                    <!-- Attachments Section -->
+                    <t
+                        t-set="attachments"
+                        t-value="request.env['ir.attachment'].sudo().search([('res_model', '=', 'rma.order.line'), ('res_id', '=', rma.id)])"
+                    />
+                    <section id="attachments" class="mt-4" t-if="attachments">
+                        <h5>Attachments</h5>
+                        <hr class="mt-0 mb-2" />
+                        <ul class="list-unstyled">
+                            <t t-foreach="attachments" t-as="attachment">
+                                <li class="mb-1">
+                                    <i class="fa fa-paperclip me-1" />
+                                    <a
+                                        t-attf-href="/my/rma/#{rma.id}/attachment/#{attachment.id}"
+                                    >
+                                        <t t-esc="attachment.name" />
+                                    </a>
+                                    <small class="text-muted ms-2">
+                                        (<t
+                                            t-esc="'%.2f' % (attachment.file_size / 1024)"
+                                        /> KB)
+                                    </small>
+                                </li>
+                            </t>
+                        </ul>
+                    </section>
+                </t>
+            </t>
+            <!-- chatter -->
+            <div id="rma_communication" class="mt-4">
+                <h2>Communication</h2>
+                <t t-call="portal.message_thread">
+                    <t t-set="object" t-value="rma" />
+                </t>
+            </div>
+        </t>
+    </template>
+
+
+</odoo>

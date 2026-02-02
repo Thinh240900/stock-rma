@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- Extend RMA Order Line Form View -->
+    <record id="view_rma_line_form_portal" model="ir.ui.view">
+        <field name="name">rma.order.line.form.portal</field>
+        <field name="model">rma.order.line</field>
+        <field name="inherit_id" ref="rma.view_rma_line_form" />
+        <field name="arch" type="xml">
+            <field name="under_warranty" position="after">
+                <field name="reason_id" />
+                <field name="kit_id" readonly="1" />
+            </field>
+        </field>
+    </record>
+
+    <!-- Extend RMA Order Line Tree View -->
+    <record id="view_rma_line_tree_portal" model="ir.ui.view">
+        <field name="name">rma.order.line.tree.portal</field>
+        <field name="model">rma.order.line</field>
+        <field name="inherit_id" ref="rma.view_rma_line_tree" />
+        <field name="arch" type="xml">
+            <field name="state" position="before">
+                <field name="reason_id" optional="hide" />
+                <field name="kit_id" optional="hide" />
+            </field>
+        </field>
+    </record>
+
+</odoo>
